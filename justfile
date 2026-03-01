@@ -32,7 +32,7 @@ check: lint test
 # Start application
 run:
     @echo "===> STARTING APPLICATION..."
-    uv run python src/main.py
+    uv run python -m src.main
 
 # Run pre-commit hooks manually
 pc:

@@ -15,7 +15,7 @@ ruff:
 # Run Mypy: Type checking only
 types:
     @echo "===> RUNNING MYPY (TYPE CHECKING)..."
-    uv run mypy src
+    uv run mypy .
 
 # Run Pytest: Unit tests with coverage
 test:

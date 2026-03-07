@@ -1,4 +1,8 @@
+import logging
+
 from src.tasks.task import Task
+
+logger = logging.getLogger(__name__)
 
 
 class TaskProcessor:
@@ -10,5 +14,5 @@ class TaskProcessor:
         :type task: Task
         :return: None
         """
-        print(f"Processing task with id={task.id}")
-        print(f"payload={task.payload}\n")
+        logger.info("Processing task with id=%s", task.id)
+        logger.debug("payload=%s", task.payload)

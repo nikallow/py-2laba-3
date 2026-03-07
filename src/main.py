@@ -8,10 +8,12 @@ from src.sources.api_src import APITaskSource
 from src.sources.file_src import FileTaskSource
 from src.sources.gen_src import RandomTaskGenerator
 
+logger = logging.getLogger(__name__)
+
 
 def setup_logging() -> None:
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         stream=sys.stdout,
     )
@@ -34,12 +36,12 @@ def main() -> None:
     # Невалидный сурс
     registry.add_source(["goose", "casino"])
 
-    print("===> STARTING TASK PROCESSING")
+    logger.info("Starting task processing")
 
     for task in registry.iter_tasks():
         processor.process(task)
 
-    print("===> PROCESSING COMPLETED")
+    logger.info("Processing completed")
 
 
 if __name__ == "__main__":

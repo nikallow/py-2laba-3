@@ -1,10 +1,10 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
-from src.tasks.exceptions import InvalidStatus
+from src.tasks.exceptions import InvalidStatusError
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     NEW = "new"
     READY = "ready"
     IN_PROGRESS = "in_progress"
@@ -20,6 +20,6 @@ class TaskStatus(str, Enum):
             try:
                 return cls(value.lower())
             except ValueError as e:
-                raise InvalidStatus(f"Unsupported status: {value!r}") from e
+                raise InvalidStatusError(f"Unsupported status: {value!r}") from e
 
-        raise InvalidStatus(f"Unsupported status type: {type(value).__name__}")
+        raise InvalidStatusError(f"Unsupported status type: {type(value).__name__}")

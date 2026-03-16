@@ -1,8 +1,11 @@
-# Лабораторная работа №1. Источники задач и контракты
+# Лабораторная работа №2. Модель задачи: дескрипторы и `@property`
 
 ## Цель
-Освоение Duck Typing и контрактов,
-реализовать сборщик и обработчик тасков из разных источников, объединённых контрактом.
+
+- изучить механизм **data** и **non-data descriptors**;
+- применить `@property` для вычисляемых свойств;
+- предотвратить некорректные состояния доменной модели;
+- использовать специализированные исключения для нарушения инвариантов.
 
 ## Installation and launching
 #### Just
@@ -20,8 +23,24 @@ uv run python -m src.main
 
 ## Архитектура
 `src/tasks/task.py`
-- Dataclass `Task` с `id` и `payload`.
+
+- `Task` - Реализует доменную модель задачи, используя дескрипторы для управления доступом
+  к атрибутам (id, description, priority, status, created_at)
+  и для защиты инвариантов состояния. Включает вычисляемые свойства (@property) и
+  методы для управления жизненным циклом задачи (смена статусов: mark_ready, start, complete, cancel),
+  генерирующие специализированные исключения при нарушении инвариантов.
 - `TaskSource` - определение контракта. Любой объект, имеющий метод `get_tasks() -> Iterable[Task]` считается валидным источником.
+
+`src/tasks/descriptors.py`
+
+- Классы-дескрипторы: Набор дескрипторов (NonEmptyString, PriorityDescriptor, StatusDescriptor, CreatedAtDescriptor,
+  ModelInfoDescriptor),
+  которые обеспечивают валидацию, контроль типов и защиту атрибутов класса Task от некорректных значений или изменений.
+
+`src/tasks/enums.py`
+
+- `TaskStatus` - Определяет допустимые состояния задачи (NEW, READY, IN_PROGRESS, DONE, BLOCKED, CANCELLED) и
+  предоставляет методы для безопасного преобразования значений.
 
 `src/sources/*`
 - `FileTaskSource`: Считывает задачи из текстовых файлов (одна строка — одна задача).
@@ -29,7 +48,7 @@ uv run python -m src.main
 - `RandomTaskGenerator`: Программная генерация случайных задач.
 
 * `src/registry.py` `TaskRegistry` Регистрации источников. Использует `isinstance(source, TaskSource)` для обеспечения безопасности типов перед добавлением сурца в реестр.
-* `src/processor.py` `TaskProcessor` Тупо обработчик.
+* `src/processor.py` `TaskProcessor` Тупой обработчик.
 
 ## Tree
 ```
@@ -47,12 +66,17 @@ uv run python -m src.main
 │   │   ├── file_src.py
 │   │   └── gen_src.py
 │   └── tasks
+│       ├── descriptors.py
+│       ├── enums.py
+│       ├── exceptions.py
 │       ├── __init__.py
 │       └── task.py
 ├── tests
 │   ├── test_api_src.py
+│   ├── test_descriptors.py
 │   ├── test_file_src.py
 │   ├── test_gen_src.py
+│   ├── test_processor.py
 │   └── test_registry.py
 └── uv.lock
 ```

@@ -14,12 +14,16 @@ def test_get_tasks_success(tmp_path: Path) -> None:
     tasks = list(source.get_tasks())
 
     assert len(tasks) == 2
+
     assert tasks[0].id == f"{test_file.name}-1"
+    assert tasks[0].payload["source_file"] == str(test_file)
+    assert tasks[0].payload["line_number"] == 1
+    assert tasks[0].payload["raw_content"] == "task one"
+
     assert tasks[1].id == f"{test_file.name}-3"
-    assert tasks[0].payload["data"] == "task one"
-    assert tasks[1].payload["data"] == "task two"
-    assert tasks[0].payload["source"] == f"file:{test_file}"
-    assert tasks[1].payload["source"] == f"file:{test_file}"
+    assert tasks[1].payload["source_file"] == str(test_file)
+    assert tasks[1].payload["line_number"] == 3
+    assert tasks[1].payload["raw_content"] == "task two"
 
 
 def test_get_tasks_file_not_found(caplog: LogCaptureFixture) -> None:
@@ -69,3 +73,4 @@ def test_get_tasks_os_error(tmp_path: Path, caplog: LogCaptureFixture) -> None:
         list(source.get_tasks())
 
     assert "OS error occurred while reading" in caplog.text
+    assert "Disk error" in caplog.text

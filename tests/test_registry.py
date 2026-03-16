@@ -2,12 +2,18 @@ from collections.abc import Iterable
 
 from _pytest.logging import LogCaptureFixture
 from src.registry import TaskRegistry
+from src.tasks.enums import TaskStatus
 from src.tasks.task import Task
 
 
 class ValidSource:
     def get_tasks(self) -> Iterable[Task]:
-        yield Task(id="1", payload={"data": "test"})
+        yield Task(
+            task_id="1",
+            description="test task",
+            payload={"data": "test"},
+            status=TaskStatus.NEW,
+        )
 
 
 class InvalidSource:
@@ -43,6 +49,8 @@ def test_iter_tasks_success() -> None:
     tasks = list(registry.iter_tasks())
     assert len(tasks) == 1
     assert tasks[0].id == "1"
+    assert tasks[0].description == "test task"
+    assert tasks[0].status == TaskStatus.NEW
 
 
 def test_iter_tasks_handles_exception(caplog: LogCaptureFixture) -> None:
@@ -56,3 +64,4 @@ def test_iter_tasks_handles_exception(caplog: LogCaptureFixture) -> None:
 
     assert len(tasks) == 1
     assert tasks[0].id == "1"
+    assert tasks[0].status == TaskStatus.NEW

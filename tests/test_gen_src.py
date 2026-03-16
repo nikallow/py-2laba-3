@@ -25,5 +25,6 @@ def test_generator_task_format() -> None:
 
     assert task.id is not None
     assert uuid.UUID(task.id)
+    assert task.description == "Generated task '1' for processing"
     assert task.payload["source"] == "degenerator"
     assert len(task.payload["data"]) == 16

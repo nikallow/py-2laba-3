@@ -43,8 +43,13 @@ class FileTaskSource:
                         continue
 
                     yield Task(
-                        id=f"{self.file_path.name}-{i}",
-                        payload={"source": f"file:{self.file_path}", "data": line},
+                        task_id=f"{self.file_path.name}-{i}",
+                        description=f"process line '{i}' from '{self.file_path}'",
+                        payload={
+                            "source_file": str(self.file_path),
+                            "line_number": i,
+                            "raw_content": line,
+                        },
                     )
 
         except PermissionError:

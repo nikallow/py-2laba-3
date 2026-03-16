@@ -15,6 +15,8 @@ class APITaskSource:
     :type endpoint: str
     """
 
+    PRIORITY_MAP = {"high": 1, "medium": 2, "low": 4}
+
     def __init__(self, endpoint: str):
         self.endpoint = endpoint
 
@@ -26,20 +28,34 @@ class APITaskSource:
         :rtype: Iterable[Task]
         """
         try:
-            raw_data = APITaskSource._fetch_from_remote()
+            raw_data = self._fetch_from_remote()
             if not raw_data:
                 logger.info("No tasks at this moment")
                 return
 
             for item in raw_data:
                 try:
-                    if "task_id" not in item:
-                        raise KeyError("Missing 'task_id' in API response")
+                    if "id" not in item:
+                        raise KeyError("Missing 'id' in API response")
 
                     task_data = item.copy()
-                    yield Task(id=task_data.pop("task_id"), payload=task_data)
-                except (KeyError, TypeError) as e:
-                    logger.error(f"Failed to parse task: {e}")
+
+                    task_id = task_data.pop("id")
+                    description = task_data.pop("command", "No description provided")
+
+                    # Маппим приоритет (по дефолту 3, если в API пришло что-то не то)
+                    raw_priority = task_data.pop("priority", "medium")
+                    priority = self.PRIORITY_MAP.get(raw_priority.lower(), 3)
+
+                    yield Task(
+                        task_id=task_id,
+                        description=description,
+                        priority=priority,
+                        payload=task_data,
+                    )
+
+                except (KeyError, TypeError, ValueError) as e:
+                    logger.error(f"Failed to parse task {item.get('task_id')}: {e}")
                     continue
 
         except Exception as e:
@@ -51,9 +67,15 @@ class APITaskSource:
         Выполняет запрос к Mock API.
 
         :return: Список словарей с сырыми данными задач.
-        :rtype: list[dict[str, typing.Any]]
+        :rtype: list[dict[str, Any]]
         """
         return [
-            {"task_id": "7281", "command": "get /users", "priority": "high"},
-            {"task_id": "7282", "command": "autoclean", "priority": "low"},
+            {"id": "7281", "command": "get /users", "priority": "high"},
+            {"id": "7282", "command": "autoclean", "priority": "low"},
+            {
+                "id": "7283",
+                "command": "backup",
+                "priority": "medium",
+                "extra": "daily",
+            },
         ]

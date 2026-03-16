@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import cast
+from typing import Any, cast, overload
 
 from src.tasks.enums import TaskStatus
 from src.tasks.exceptions import (
@@ -8,6 +8,17 @@ from src.tasks.exceptions import (
     ReadOnlyFieldError,
     TaskInvariantError,
 )
+
+
+class ModelInfoDescriptor:
+    """
+    Non-data descriptor для предоставления информации о модели.
+
+    (Демо для лабы): не имеет метода __set__.
+    """
+
+    def __get__(self, instance: object | None, owner: type[Any]) -> str:
+        return f"TaskModel: {owner.__name__} (v2.0)"
 
 
 class NonEmptyString:
@@ -19,7 +30,6 @@ class NonEmptyString:
 
     def __init__(
             self,
-            private_name: str,
             error_cls: type[TaskInvariantError],
             *,
             read_only: bool = False,
@@ -27,17 +37,26 @@ class NonEmptyString:
         """
         Инициализирует дескриптор строки.
 
-        :param private_name: Имя внутреннего атрибута для хранения значения.
-        :type private_name: str
         :param error_cls: Класс исключения для невалидного значения.
         :type error_cls: type[TaskInvariantError]
         :param read_only: Поле только для чтения.
         :type read_only: bool
         :return: None
         """
-        self.private_name = private_name
         self.error_cls = error_cls
         self.read_only = read_only
+
+    def __set_name__(self, owner: type[Any], name: str) -> None:
+        self.private_name = f"_{name}"
+
+    # For mypy
+    @overload
+    def __get__(self, instance: None, owner: type[Any]) -> NonEmptyString:
+        ...
+
+    @overload
+    def __get__(self, instance: object, owner: type[Any]) -> str:
+        ...
 
     def __get__(
             self, instance: object, owner: type | None = None
@@ -82,15 +101,16 @@ class PriorityDescriptor:
     Data descriptor для приоритета задачи.
     """
 
-    def __init__(self, private_name: str) -> None:
-        """
-        Инициализирует дескриптор приоритета.
+    def __set_name__(self, owner: type[Any], name: str) -> None:
+        self.private_name = f"_{name}"
 
-        :param private_name: Имя внутреннего атрибута для хранения значения.
-        :type private_name: str
-        :return: None
-        """
-        self.private_name = private_name
+    @overload
+    def __get__(self, instance: None, owner: type[Any]) -> PriorityDescriptor:
+        ...
+
+    @overload
+    def __get__(self, instance: object, owner: type[Any]) -> int:
+        ...
 
     def __get__(
             self, instance: object, owner: type | None = None
@@ -134,15 +154,14 @@ class StatusDescriptor:
     Data descriptor для статуса задачи.
     """
 
-    def __init__(self, private_name: str) -> None:
-        """
-        Инициализирует дескриптор статуса.
+    def __set_name__(self, owner: type[Any], name: str) -> None:
+        self.private_name = f"_{name}"
 
-        :param private_name: Имя внутреннего атрибута для хранения значения.
-        :type private_name: str
-        :return: None
-        """
-        self.private_name = private_name
+    @overload
+    def __get__(self, instance: None, owner: type[Any]) -> StatusDescriptor: ...
+
+    @overload
+    def __get__(self, instance: object, owner: type[Any]) -> TaskStatus: ...
 
     def __get__(
             self,
@@ -183,15 +202,16 @@ class CreatedAtDescriptor:
     Поле является только для чтения после первой инициализации.
     """
 
-    def __init__(self, private_name: str) -> None:
-        """
-        Инициализирует дескриптор временной метки.
+    def __set_name__(self, owner: type[Any], name: str) -> None:
+        self.private_name = f"_{name}"
 
-        :param private_name: Имя внутреннего атрибута для хранения значения.
-        :type private_name: str
-        :return: None
-        """
-        self.private_name = private_name
+    @overload
+    def __get__(self, instance: None, owner: type[Any]) -> CreatedAtDescriptor:
+        ...
+
+    @overload
+    def __get__(self, instance: object, owner: type[Any]) -> datetime:
+        ...
 
     def __get__(
             self,
@@ -222,12 +242,16 @@ class CreatedAtDescriptor:
         :type value: datetime
         :return: None
         :raises ReadOnlyFieldError: Если поле уже было инициализировано.
-        :raises InvalidTimestampError: Если значение не является datetime.
+        :raises InvalidTimestampError: Если значение не является datetime
+            или не установлена таймзона.
         """
         if hasattr(instance, self.private_name):
-            raise ReadOnlyFieldError("created_at is read-only")
+            raise ReadOnlyFieldError("created_at is read-only.")
 
         if not isinstance(value, datetime):
             raise InvalidTimestampError("created_at must be datetime.")
+
+        if value.tzinfo is None:
+            raise InvalidTimestampError("created_at must use UTC tz.")
 
         setattr(instance, self.private_name, value)

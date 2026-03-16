@@ -9,8 +9,9 @@ class RandomTaskGenerator:
         self.count = count
 
     def get_tasks(self) -> Iterable[Task]:
-        for _ in range(self.count):
+        for i in range(self.count):
             yield Task(
-                id=str(uuid4()),
+                task_id=str(uuid4()),
+                description=f"Generated task '{i + 1}' for processing",
                 payload={"source": "degenerator", "data": uuid4().hex[:16]},
             )

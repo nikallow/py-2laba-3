@@ -30,10 +30,10 @@ def task_factory() -> Callable[[TaskStatus], Task]:
     "initial_status", [TaskStatus.NEW, TaskStatus.READY, TaskStatus.IN_PROGRESS]
 )
 def test_processing_transitions_to_done(
-        processor: TaskProcessor,
-        task_factory: Callable[[TaskStatus], Task],
-        caplog: LogCaptureFixture,
-        initial_status: TaskStatus,
+    processor: TaskProcessor,
+    task_factory: Callable[[TaskStatus], Task],
+    caplog: LogCaptureFixture,
+    initial_status: TaskStatus,
 ) -> None:
     caplog.set_level(logging.DEBUG)
     task = task_factory(initial_status)
@@ -48,10 +48,10 @@ def test_processing_transitions_to_done(
     "ignored_status", [TaskStatus.DONE, TaskStatus.CANCELLED, TaskStatus.BLOCKED]
 )
 def test_processing_ignores_terminal_statuses(
-        processor: TaskProcessor,
-        task_factory: Callable[[TaskStatus], Task],
-        caplog: LogCaptureFixture,
-        ignored_status: TaskStatus,
+    processor: TaskProcessor,
+    task_factory: Callable[[TaskStatus], Task],
+    caplog: LogCaptureFixture,
+    ignored_status: TaskStatus,
 ) -> None:
     caplog.set_level(logging.WARNING)
     task = task_factory(ignored_status)

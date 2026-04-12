@@ -78,11 +78,11 @@ class TestPriorityDescriptor:
 
     @pytest.mark.parametrize("invalid_priority", [0, 5, -1])
     def test_set_out_of_range_priority_raises_error(
-            self, invalid_priority: int
+        self, invalid_priority: int
     ) -> None:
         obj = DummyModel()
         with pytest.raises(
-                InvalidPriorityError, match="Priority must be between 1 and 4"
+            InvalidPriorityError, match="Priority must be between 1 and 4"
         ):
             obj.priority = invalid_priority
 

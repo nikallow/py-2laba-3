@@ -3,11 +3,11 @@ from typing import Any, cast, overload
 
 from src.tasks.enums import TaskStatus
 from src.tasks.exceptions import (
-    InvalidPriorityError,
     InvalidTimestampError,
     ReadOnlyFieldError,
     TaskInvariantError,
 )
+from tasks.validators import validate_priority
 
 
 class ModelInfoDescriptor:
@@ -29,10 +29,10 @@ class NonEmptyString:
     """
 
     def __init__(
-            self,
-            error_cls: type[TaskInvariantError],
-            *,
-            read_only: bool = False,
+        self,
+        error_cls: type[TaskInvariantError],
+        *,
+        read_only: bool = False,
     ) -> None:
         """
         Инициализирует дескриптор строки.
@@ -51,15 +51,13 @@ class NonEmptyString:
 
     # For mypy
     @overload
-    def __get__(self, instance: None, owner: type[Any]) -> NonEmptyString:
-        ...
+    def __get__(self, instance: None, owner: type[Any]) -> NonEmptyString: ...
 
     @overload
-    def __get__(self, instance: object, owner: type[Any]) -> str:
-        ...
+    def __get__(self, instance: object, owner: type[Any]) -> str: ...
 
     def __get__(
-            self, instance: object, owner: type | None = None
+        self, instance: object, owner: type | None = None
     ) -> str | NonEmptyString:
         """
         Возвращает значение строкового атрибута.
@@ -105,15 +103,13 @@ class PriorityDescriptor:
         self.private_name = f"_{name}"
 
     @overload
-    def __get__(self, instance: None, owner: type[Any]) -> PriorityDescriptor:
-        ...
+    def __get__(self, instance: None, owner: type[Any]) -> PriorityDescriptor: ...
 
     @overload
-    def __get__(self, instance: object, owner: type[Any]) -> int:
-        ...
+    def __get__(self, instance: object, owner: type[Any]) -> int: ...
 
     def __get__(
-            self, instance: object, owner: type | None = None
+        self, instance: object, owner: type | None = None
     ) -> int | PriorityDescriptor:
         """
         Возвращает значение приоритета.
@@ -141,12 +137,7 @@ class PriorityDescriptor:
         :raises InvalidPriorityError: Если значение не является целым числом
             или не входит в допустимый диапазон.
         """
-        if not isinstance(value, int):
-            raise InvalidPriorityError("Priority must be an integer.")
-        if not 1 <= value <= 4:
-            raise InvalidPriorityError("Priority must be between 1 and 4.")
-
-        setattr(instance, self.private_name, value)
+        setattr(instance, self.private_name, validate_priority(value))
 
 
 class StatusDescriptor:
@@ -164,9 +155,9 @@ class StatusDescriptor:
     def __get__(self, instance: object, owner: type[Any]) -> TaskStatus: ...
 
     def __get__(
-            self,
-            instance: object,
-            owner: type | None = None,
+        self,
+        instance: object,
+        owner: type | None = None,
     ) -> TaskStatus | StatusDescriptor:
         """
         Возвращает статус задачи.
@@ -206,17 +197,15 @@ class CreatedAtDescriptor:
         self.private_name = f"_{name}"
 
     @overload
-    def __get__(self, instance: None, owner: type[Any]) -> CreatedAtDescriptor:
-        ...
+    def __get__(self, instance: None, owner: type[Any]) -> CreatedAtDescriptor: ...
 
     @overload
-    def __get__(self, instance: object, owner: type[Any]) -> datetime:
-        ...
+    def __get__(self, instance: object, owner: type[Any]) -> datetime: ...
 
     def __get__(
-            self,
-            instance: object,
-            owner: type | None = None,
+        self,
+        instance: object,
+        owner: type | None = None,
     ) -> datetime | CreatedAtDescriptor:
         """
         Возвращает время создания задачи.

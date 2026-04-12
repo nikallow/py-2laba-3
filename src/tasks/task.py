@@ -27,13 +27,13 @@ class Task:
     metadata = ModelInfoDescriptor()
 
     def __init__(
-            self,
-            task_id: str,
-            description: str,
-            payload: dict[str, Any] | None = None,
-            priority: int = 3,
-            status: TaskStatus = TaskStatus.NEW,
-            created_at: datetime | None = None,
+        self,
+        task_id: str,
+        description: str,
+        payload: dict[str, Any] | None = None,
+        priority: int = 3,
+        status: TaskStatus = TaskStatus.NEW,
+        created_at: datetime | None = None,
     ):
         """
         Инициализирует задачу.

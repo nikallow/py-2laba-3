@@ -1,9 +1,10 @@
 from collections.abc import Iterable
 
 from _pytest.logging import LogCaptureFixture
-from src.registry import TaskRegistry
 from src.tasks.enums import TaskStatus
 from src.tasks.task import Task
+
+from tasks.queue import TaskRegistry
 
 
 class ValidSource:

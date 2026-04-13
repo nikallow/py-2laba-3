@@ -7,7 +7,7 @@ from src.tasks.exceptions import (
     ReadOnlyFieldError,
     TaskInvariantError,
 )
-from tasks.validators import validate_priority
+from src.tasks.validators import validate_priority
 
 
 class ModelInfoDescriptor:

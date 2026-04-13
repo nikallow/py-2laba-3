@@ -1,11 +1,13 @@
 import logging
 import sys
+from itertools import islice
 from pathlib import Path
 
 from src.processor import TaskProcessor
 from src.sources.api_src import APITaskSource
 from src.sources.file_src import FileTaskSource
 from src.sources.gen_src import RandomTaskGenerator
+from src.tasks.enums import TaskStatus
 from src.tasks.queue import TaskQueue
 
 logger = logging.getLogger(__name__)
@@ -35,6 +37,14 @@ def main() -> None:
 
     # Невалидный сурс
     queue.add_source(["goose", "casino"])
+
+    new_tasks = list(queue.filter_by_status(TaskStatus.NEW))
+    high_priority_preview = [
+        task.summary for task in islice(queue.filter_higher_priority(2), 5)
+    ]
+
+    logger.info(f"New tasks count: {len(new_tasks)}")
+    logger.info(f"Top high-priority preview: {high_priority_preview}")
 
     logger.info("Starting task processing")
 

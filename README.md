@@ -1,20 +1,24 @@
-# Лабораторная работа №2. Модель задачи: дескрипторы и `@property`
+# Лабораторная работа №3. Очередь задач: итераторы и генераторы
 
 ## Цель
 
-- изучить механизм **data** и **non-data descriptors**;
-- применить `@property` для вычисляемых свойств;
-- предотвратить некорректные состояния доменной модели;
-- использовать специализированные исключения для нарушения инвариантов.
+- реализовать пользовательскую коллекцию `TaskQueue`, поддерживающую итерацию
+- обеспечить повторный обход очереди и корректное завершение итерации (`StopIteration`)
+- применить генераторы для ленивой фильтрации задач
+- показать совместимость коллекции со стандартными конструкциями Python (ex: `for`, `list`)
+- обеспечить корректную работу на больших данных
 
 ## Installation and launching
+
 #### Just
+
 ```shell
 just install
 just run
 ```
 
 #### No just
+
 ```shell
 uv sync
 uv run python -m src.main
@@ -42,16 +46,35 @@ uv run python -m src.main
 - `TaskStatus` - Определяет допустимые состояния задачи (NEW, READY, IN_PROGRESS, DONE, BLOCKED, CANCELLED) и
   предоставляет методы для безопасного преобразования значений.
 
+`src/tasks/queue.py`
+
+- `TaskQueue` хранит зарегистрированные источники и реализует `__iter__`
+- обход задач сделан через `yield from` (ленивая потоковая выдача)
+- `filter_by_status`, `filter_by_priority`, `filter_higher_priority` возвращают генераторы
+- фильтрация выполняется без материализации всей очереди в память
+
 `src/sources/*`
 - `FileTaskSource`: Считывает задачи из текстовых файлов (одна строка — одна задача).
 - `APITaskSource`: Имитирует получение данных из внешнего API.
 - `RandomTaskGenerator`: Программная генерация случайных задач.
 
-* `src/registry.py` `TaskRegistry` Регистрации источников. Использует `isinstance(source, TaskSource)` для обеспечения безопасности типов перед добавлением сурца в реестр.
-* `src/processor.py` `TaskProcessor` Тупой обработчик.
+`src/processor.py`
+
+- `TaskProcessor` выполняет базовую обработку задачи и переходы по статусам.
+
+## Тесты (Queue)
+
+Тесты для очереди находятся в `tests/test_task_queue.py`:
+
+- добавление валидного/невалидного источника
+- итерация по задачам и устойчивость к исключениям источника
+- повторный обход очереди
+- явный `StopIteration` на пустой очереди
+- ленивые фильтры по статусу/приоритету и валидация ошибок ввода
 
 ## Tree
-```
+
+```text
 .
 ├── justfile
 ├── pyproject.toml
@@ -60,23 +83,24 @@ uv run python -m src.main
 │   ├── __init__.py
 │   ├── main.py
 │   ├── processor.py
-│   ├── registry.py
 │   ├── sources
 │   │   ├── api_src.py
 │   │   ├── file_src.py
 │   │   └── gen_src.py
 │   └── tasks
+│       ├── __init__.py
 │       ├── descriptors.py
 │       ├── enums.py
 │       ├── exceptions.py
-│       ├── __init__.py
-│       └── task.py
+│       ├── queue.py
+│       ├── task.py
+│       └── validators.py
 ├── tests
 │   ├── test_api_src.py
 │   ├── test_descriptors.py
 │   ├── test_file_src.py
 │   ├── test_gen_src.py
 │   ├── test_processor.py
-│   └── test_registry.py
+│   └── test_task_queue.py
 └── uv.lock
 ```

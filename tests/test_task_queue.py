@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+
 import pytest
 from _pytest.logging import LogCaptureFixture
 from src.tasks.enums import TaskStatus
@@ -40,6 +42,18 @@ class InvalidSource:
 class BrokenSource:
     def get_tasks(self) -> None:
         raise RuntimeError("Goose!")
+
+
+class BrokenDuringIterationSource:
+    def get_tasks(self) -> Iterator[Task]:
+        yield Task(
+            task_id="broken-1",
+            description="task before source failure",
+            payload={"data": "broken"},
+            status=TaskStatus.NEW,
+            priority=1,
+        )
+        raise RuntimeError("Goose during iteration!")
 
 
 def test_add_valid_source() -> None:
@@ -94,11 +108,51 @@ def test_queue_supports_repeated_iteration() -> None:
     assert second_pass == ["1", "2", "3"]
 
 
+def test_queue_iter_returns_independent_iterator() -> None:
+    queue = TaskQueue()
+    queue.add_source(ValidSource())
+
+    first_iterator = iter(queue)
+    second_iterator = iter(queue)
+
+    assert first_iterator is not second_iterator
+    assert iter(first_iterator) is first_iterator
+    assert next(first_iterator).id == "1"
+    assert next(first_iterator).id == "2"
+    assert next(second_iterator).id == "1"
+
+
+def test_iterator_raises_stop_iteration_after_last_task() -> None:
+    queue = TaskQueue()
+    queue.add_source(ValidSource())
+    iterator = iter(queue)
+
+    assert next(iterator).id == "1"
+    assert next(iterator).id == "2"
+    assert next(iterator).id == "3"
+
+    with pytest.raises(StopIteration):
+        next(iterator)
+
+
 def test_empty_queue_iterator_raises_stop_iteration() -> None:
     queue = TaskQueue()
 
     with pytest.raises(StopIteration):
         next(iter(queue))
+
+
+def test_iter_tasks_handles_exception_during_iteration(
+    caplog: LogCaptureFixture,
+) -> None:
+    queue = TaskQueue()
+
+    queue.add_source(BrokenDuringIterationSource())
+    queue.add_source(ValidSource())
+    tasks = list(queue)
+
+    assert "Unexpected failure in source" in caplog.text
+    assert [task.id for task in tasks] == ["broken-1", "1", "2", "3"]
 
 
 def test_filter_by_status_supports_string_value() -> None:

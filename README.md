@@ -49,7 +49,8 @@ uv run python -m src.main
 `src/tasks/queue.py`
 
 - `TaskQueue` хранит зарегистрированные источники и реализует `__iter__`
-- обход задач сделан через `yield from` (ленивая потоковая выдача)
+- `TaskQueueIterator` ВРУЧНУЮ реализует `__iter__` и `__next__`, хранит состояние обхода
+  источников и явно обрабатывает `StopIteration`
 - `filter_by_status`, `filter_by_priority`, `filter_higher_priority` возвращают генераторы
 - фильтрация выполняется без материализации всей очереди в память
 

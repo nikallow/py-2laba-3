@@ -8,6 +8,83 @@ from src.tasks.validators import validate_priority
 logger = logging.getLogger(__name__)
 
 
+class TaskQueueIterator(Iterator[Task]):
+    """
+    Итератор очереди задач с ручным управлением состоянием обхода.
+    """
+
+    def __init__(self, sources: list[TaskSource]) -> None:
+        """
+        Инициализирует итератор списком источников задач.
+
+        :param sources: Источники, которые нужно обойти.
+        :type sources: list[TaskSource]
+        """
+        self._sources = sources
+        self._source_index = 0
+        self._current_tasks: Iterator[Task] | None = None
+        self._current_source: TaskSource | None = None
+
+    def __iter__(self) -> Iterator[Task]:
+        """
+        Возвращает текущий объект итератора.
+
+        :rtype: Iterator[Task]
+        """
+        return self
+
+    def __next__(self) -> Task:
+        """
+        Возвращает следующую задачу из текущего или следующего источника.
+
+        Если источник завершился или вызвал исключение, итератор переходит к
+        следующему зареганному источнику.
+
+        :return: Следующая задача из очереди.
+        :rtype: Task
+        :raises StopIteration: Когда все источники полностью обойдены.
+        """
+        while self._source_index < len(self._sources):
+            if self._current_tasks is None:
+                self._start_next_source()
+                continue
+
+            try:
+                return next(self._current_tasks)
+            except StopIteration:
+                self._finish_current_source()
+            except Exception:
+                logger.exception(
+                    f"Unexpected failure in source "
+                    f"{type(self._current_source).__name__}"
+                )
+                self._finish_current_source()
+
+        raise StopIteration
+
+    def _start_next_source(self) -> None:
+        """
+        Подготавливает итератор задач для следующего источника.
+        """
+        self._current_source = self._sources[self._source_index]
+
+        try:
+            self._current_tasks = iter(self._current_source.get_tasks())
+        except Exception:
+            logger.exception(
+                f"Unexpected failure in source {type(self._current_source).__name__}"
+            )
+            self._finish_current_source()
+
+    def _finish_current_source(self) -> None:
+        """
+        Завершает обработку текущего источника и сбрасывает его состояние.
+        """
+        self._source_index += 1
+        self._current_tasks = None
+        self._current_source = None
+
+
 class TaskQueue:
     """
     Очередь задач, объединяющая несколько источников.
@@ -37,21 +114,14 @@ class TaskQueue:
 
     def __iter__(self) -> Iterator[Task]:
         """
-        Последовательно запрашивает задачи из всех зарегистрированных источников.
+        Создает независимый итератор для обхода всех зарегистрированных источников.
 
-        Метод устойчив к ошибкам отдельных источников: если один источник
-        вызывает исключение, итерация продолжается для остальных.
+        Каждый вызов iter возвращает новый объект итератора, поэтому
+        очередь поддерживает повторный и независимый обход.
 
-        :yield: Объект задачи, полученный из одного из источников.
         :rtype: Iterator[Task]
         """
-        for source in self._sources:
-            try:
-                yield from source.get_tasks()
-            except Exception:
-                logger.exception(
-                    f"Unexpected failure in source {type(source).__name__}"
-                )
+        return TaskQueueIterator(self._sources)
 
     def filter_by_status(self, status: TaskStatus | str) -> Iterator[Task]:
         """
